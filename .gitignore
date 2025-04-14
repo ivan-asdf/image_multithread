@@ -1,0 +1,22 @@
+# Build artifacts
+bin/
+obj/
+
+# Output folder
+output/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Keep images folder tracked
+!images/
+!images/** 
