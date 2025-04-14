@@ -25,16 +25,25 @@ namespace ImageProcessor
 
         public override void Execute()
         {
-            if (Directory.Exists(_FilePath))
+            try 
             {
-                var entries = Directory.GetFileSystemEntries(_FilePath);
-                foreach (var entry in entries)
-                    _ioStack.Push(new FileLoadingTask(entry, _ioStack, _processingQueue));
+                if (Directory.Exists(_FilePath))
+                {
+                    var entries = Directory.GetFileSystemEntries(_FilePath);
+                    Console.WriteLine($"Read dir: {Path.GetFileName(_FilePath)}");
+                    foreach (var entry in entries)
+                        _ioStack.Push(new FileLoadingTask(entry, _ioStack, _processingQueue));
+                }
+                else
+                {
+                    byte[] imageData = System.IO.File.ReadAllBytes(_FilePath);
+                    Console.WriteLine($"Read file: {Path.GetFileName(_FilePath)}");
+                    _processingQueue.Enqueue(new ImageProcessingTask(imageData, _FilePath, _ioStack));
+                }
             }
-            else
+            catch (Exception ex)
             {
-                byte[] imageData = System.IO.File.ReadAllBytes(_FilePath);
-                _processingQueue.Enqueue(new ImageProcessingTask(imageData, _FilePath, _ioStack));
+                Console.WriteLine($"Error reading file {_FilePath}: {ex.Message}");
             }
         }
     }
@@ -57,8 +66,6 @@ namespace ImageProcessor
         {
             try
             {
-                Console.WriteLine($"Processing image: {Path.GetFileName(_ImagePath)}");
-                
                 using (var image = Image.Load(_ImageData))
                 {
                     var targetWidth = 1280;
@@ -69,6 +76,7 @@ namespace ImageProcessor
                     var newHeight = (int)(image.Height * ratio);
 
                     image.Mutate(x => x.Resize(newWidth, newHeight));
+                    Console.WriteLine($"Processed image: {Path.GetFileName(_ImagePath)}");
 
                     using (var memoryStream = new MemoryStream())
                     {
@@ -89,8 +97,6 @@ namespace ImageProcessor
         private byte[] _ImageData;
         private string _ImagePath;
 
-        private static readonly string OutputRoot = Path.Combine(Directory.GetCurrentDirectory(), "output");
-
         public ImageSavingTask(byte[] imageData, string imagePath)
         {
             _ImageData = imageData;
@@ -103,8 +109,8 @@ namespace ImageProcessor
             {
                 using (var image = Image.Load(_ImageData))
                 {
-                    string relativePath = Path.GetRelativePath(Program._imagesPath, _ImagePath);
-                    string outputPath = Path.Combine(OutputRoot, relativePath);
+                    string relativePath = Path.GetRelativePath(Program.ImagesPath, _ImagePath);
+                    string outputPath = Path.Combine(Program.OutputPath, relativePath);
                     
                     Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
                     
